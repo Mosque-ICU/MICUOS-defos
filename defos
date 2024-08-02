@@ -1,38 +1,53 @@
 #!/usr/bin/env bash
 
+
+#  #--------------------------------------------------------------------------------------------------------------------------
+# ?                                                   QUESTION HEADER
+#  - Drive path 
+#  - EFI partition path
+#  - Root partition
+#  - Hostname (username)
+
+#--------------------------------------------------------------------------------------------------------------------------
+
+
+
 #  //TODO - add mosque icu header aswell near this defos
 
+#  sh logo sh
 
-echo "           .____      _____"
-echo "         __| _/_____ / ____\\____  ______"
-echo "        / __ |/ __ \\   __\\/_  _ \\/  ___/"
-echo "       / /_/ \\  ___/|  |   /  <_> )___ \\"
-echo "       \\____ |\\___  >__|   \\____/____  >"
-echo "            \\/    \\/                 \\/ "
-echo " == MY ARCH SETUP INSTALLER == "
+# mesage user installing defoos
+# echo "Installing DefOS..."
 
-#part1
 
-echo "Installing DefOS..."
+
 sed -i "s/^#ParallelDownloads = 5$/ParallelDownloads = 15/" /etc/pacman.conf
 pacman --noconfirm -Sy archlinux-keyring networkmanager
 loadkeys us
 timedatectl set-ntp true
 lsblk
+
+# 
+
+
 echo "Enter the drive: "
 read drive
 cfdisk $drive
+
+# 
+
 echo "Enter EFI partition: "
 # //TODO -  make the efi a variable so its reused
 read efipartition
 mkfs.vfat -F 32 $efipartition
 
+#  //LINK - 
 echo "Enter the root partition: "
 read rootpartition
 mkfs.ext4 $rootpartition
-
-
 mount $rootpartition /mnt
+
+
 pacstrap /mnt base base-devel linux linux-firmware
 genfstab -U /mnt >>/mnt/etc/fstab
 sed '1,/^#part2$/d' $(basename $0) >/mnt/arch_install2.sh
@@ -50,21 +65,30 @@ echo "en_US.UTF-8 UTF-8" >>/etc/locale.gen
 locale-gen
 echo "LANG=en_US.UTF-8" >/etc/locale.conf
 echo "KEYMAP=us" >/etc/vconsole.conf
+
+#  //LINK - 
 echo "Hostname: "
 read hostname
 echo $hostname >/etc/hostname
+
+
 echo "127.0.0.1       localhost" >>/etc/hosts
 echo "::1             localhost" >>/etc/hosts
 echo "127.0.1.1       $hostname.localdomain $hostname" >>/etc/hosts
 mkinitcpio -P
 passwd
 pacman --noconfirm -S grub efibootmgr os-prober
+
+
+# //TODO - identidy if the user is a uefi or efi boot
+
+#  //
 echo "Enter EFI partition: "
 read efipartition
 mkdir /boot/efi
 mount $efipartition /boot/efi
+# //FIXME -  This is redundant code should reuse variables
 
-# //TODO - identidy if the user is a uefi or efi boot
 
 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
 sed -i 's/quiet/pci=noaer/g' /etc/default/grub
@@ -88,14 +112,18 @@ systemctl enable connman.service
 systemctl enable sddm
 systemctl enable networkmanager
 echo "%wheel ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers
+
 echo "Enter Username: "
 read username
 useradd -m -G wheel -s /bin/fish $username
 passwd $username
-echo "Pre-Installation Finish Reboot now"
+
 ai3_path=/home/$username/arch_install3.sh
 sed '1,/^#part3$/d' arch_install2.sh >$ai3_path
 chown $username:$username $ai3_path
 chmod +x $ai3_path
 su -c $ai3_path -s /bin/sh $username
 exit
+
+echo "Pre-Installation Finish Reboot now"
+#  add a timer and then autoreboot the pc
