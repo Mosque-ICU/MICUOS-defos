@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+#  //TODO - add mosque icu header aswell near this defos
+
+
 echo "           .____      _____"
 echo "         __| _/_____ / ____\\____  ______"
 echo "        / __ |/ __ \\   __\\/_  _ \\/  ___/"
@@ -20,6 +23,7 @@ echo "Enter the drive: "
 read drive
 cfdisk $drive
 echo "Enter EFI partition: "
+# //TODO -  make the efi a variable so its reused
 read efipartition
 mkfs.vfat -F 32 $efipartition
 
@@ -27,40 +31,8 @@ echo "Enter the root partition: "
 read rootpartition
 mkfs.ext4 $rootpartition
 
-echo "Enter the home partition: "
-read homepartition
-mkfs.ext4 $homepartition
-
-mkdir /mnt/home
-
-read -p "Did you create more partitions? [y/n]" answer
-if [[ $answer = y ]]; then
-
-	read -p "Did you also create games partition? [y/n]" answer
-	if [[ $answer = y ]]; then
-		echo "Enter games partition: "
-		read gamespartition
-		mkfs.ext4 $gamespartition
-
-		mkdir /mnt/games
-
-		mount $gamespartition /mnt/games
-	fi
-
-	read -p "Did you also create WMs partition? [y/n]" answer
-	if [[ $answer = y ]]; then
-		echo "Enter WMs partition: "
-		read wmpartition
-		mkfs.ext4 $wmpartition
-
-		mkdir /mnt/wms
-    
-		mount $wmpartition /mnt/wms
-	fi
-fi
 
 mount $rootpartition /mnt
-mount $homepartition /mnt/home
 pacstrap /mnt base base-devel linux linux-firmware
 genfstab -U /mnt >>/mnt/etc/fstab
 sed '1,/^#part2$/d' $(basename $0) >/mnt/arch_install2.sh
@@ -91,6 +63,9 @@ echo "Enter EFI partition: "
 read efipartition
 mkdir /boot/efi
 mount $efipartition /boot/efi
+
+# //TODO - identidy if the user is a uefi or efi boot
+
 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
 sed -i 's/quiet/pci=noaer/g' /etc/default/grub
 sed -i 's/GRUB_TIMEOUT=5/GRUB_TIMEOUT=0/g' /etc/default/grub
@@ -123,68 +98,4 @@ sed '1,/^#part3$/d' arch_install2.sh >$ai3_path
 chown $username:$username $ai3_path
 chmod +x $ai3_path
 su -c $ai3_path -s /bin/sh $username
-exit
-
-#part3
-printf '\033c'
-cd $HOME
-
-# installing yay
-
-git clone https://aur.archlinux.org/yay.git
-cd yay
-makepkg -si
-cd ~
-
-yay -S sddm-sugar-candy-git edex-ui-appimage brave-bin --noconfirm
-
-# plymouth configuration
-
-sudo sed -i '/^HOOKS=/ s/)$/ plymouth)/' /etc/mkinitcpio.conf
-
-sudo mkinitcpio -p linux
-
-sudo sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/"$/ quiet splash"/' /etc/default/grub
-
-sudo grub-mkconfig -o /boot/grub/grub.cfg
-
-sudo plymouth-set-defaul-theme -R bgrt
-
-# setup sddm theme
-
-sudo touch /etc/sddm.conf
-
-echo -e "[Theme]\nCurrent=sugar-candy" | sudo tee -a /etc/sddm.conf
-# cloning .dotfiles
-
-git clone https://github.com/xDeFc0nx/dotfiles.git
-
-# copyng the files
-
-cp -r ~/dotfiles/.config/* ~/.config
-cp -r ~/dotfiles/Wallpapers/ ~/Wallpapers/
-cp -r ~/dotfiles//scripts/ ~/scripts
-cp -r ~/dotfiles/.xinitrc ~/.xinitrc
-cp -r ~/dotfiles/.xsession ~/.xsession
-sudo mkdir -p /usr/share/xsessions/
-cp -r ~/dotfiles/dwm.dekstop /usr/share/xsessions/dwm.desktop
-
-# pdwm: Window Manager
-sudo make -C ~/.config/pdwm/ clean install
-
-# dmenu: Program Menu
-sudo make -C ~/.config/dmenu/ clean install
-
-# slstatus: system status
-
-sudo make -C ~/.config/slstatus/ clean install
-
-# picom setup
-cd ~/.config/picom
-meson setup --buildtype=release build
-ninja -C build install
-
-cd ~
-
-config config --local status.showUntrackedFiles no
 exit
