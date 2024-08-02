@@ -2,6 +2,9 @@ import React from 'react';
 import { render } from 'ink';
 import { Form } from 'ink-form';
 
+
+//  This is set up so far to show the interface we should add the information and then run the actions in the scrpt using js to refrenmce the files print the ssttoud and then also accompany with the ink animations as a facarde 
+
 const licenses = [
     'MIT',
     'CC-BY-SA-4.0',
